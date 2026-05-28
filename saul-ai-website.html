@@ -1,0 +1,1408 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SAUL AI TERMINAL | The AI Operating System for Private Equity</title>
+  <style>
+    :root {
+      --black: #020608;
+      --ink: #061014;
+      --panel: rgba(7, 18, 24, .92);
+      --panel2: rgba(11, 28, 36, .86);
+      --line: rgba(102, 252, 241, .16);
+      --line2: rgba(102, 252, 241, .28);
+      --cyan: #33f4df;
+      --cyan2: #76fff3;
+      --emerald: #99ff5e;
+      --amber: #ffc247;
+      --red: #ff4568;
+      --violet: #9d7cff;
+      --text: #e9f8fb;
+      --muted: #78919c;
+      --muted2: #a9bdc5;
+      --mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { background: var(--black); }
+    body {
+      margin: 0;
+      min-width: 340px;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: var(--sans);
+      background:
+        radial-gradient(circle at 14% 8%, rgba(51, 244, 223, .14), transparent 28%),
+        radial-gradient(circle at 84% 14%, rgba(153, 255, 94, .08), transparent 26%),
+        linear-gradient(180deg, #020608 0%, #061116 46%, #020507 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(102, 252, 241, .055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(102, 252, 241, .055) 1px, transparent 1px);
+      background-size: 34px 34px;
+      mask-image: linear-gradient(180deg, black 0%, transparent 88%);
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .mono { font-family: var(--mono); }
+
+    .terminal {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr) 390px;
+      min-height: 100vh;
+    }
+
+    .rail {
+      border-right: 1px solid var(--line);
+      background: rgba(0, 0, 0, .38);
+      backdrop-filter: blur(20px);
+      padding: 12px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+
+    .brand {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 6px 14px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 12px;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(51, 244, 223, .42);
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      color: var(--cyan);
+      font: 800 18px var(--mono);
+      background: rgba(51, 244, 223, .08);
+      box-shadow: 0 0 34px rgba(51, 244, 223, .16);
+    }
+
+    .brand strong {
+      display: block;
+      font-size: 17px;
+      letter-spacing: .03em;
+    }
+
+    .brand span {
+      display: block;
+      color: var(--muted);
+      font: 600 10px var(--mono);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .nav-group-title {
+      color: var(--muted);
+      font: 700 10px var(--mono);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      margin: 14px 8px 8px;
+    }
+
+    .nav button {
+      width: 100%;
+      min-height: 38px;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      display: grid;
+      grid-template-columns: 20px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      background: transparent;
+      color: #9fb5bd;
+      padding: 0 9px;
+      text-align: left;
+      transition: .16s ease;
+    }
+
+    .nav button:hover,
+    .nav button.active {
+      color: white;
+      border-color: var(--line2);
+      background: linear-gradient(90deg, rgba(51, 244, 223, .12), rgba(51, 244, 223, .03));
+      box-shadow: inset 0 0 22px rgba(51, 244, 223, .05);
+    }
+
+    .nav .icon {
+      color: var(--cyan);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .key {
+      color: var(--muted);
+      font: 700 10px var(--mono);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 4px;
+      padding: 2px 4px;
+    }
+
+    .pulse {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 16px var(--emerald);
+    }
+
+    .main {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    .macro {
+      border-bottom: 1px solid var(--line);
+      background: rgba(0, 0, 0, .42);
+      backdrop-filter: blur(20px);
+      overflow: hidden;
+    }
+
+    .macro-top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 14px 8px;
+      border-bottom: 1px solid rgba(102, 252, 241, .09);
+    }
+
+    .terminal-title h1 {
+      margin: 0;
+      font-size: clamp(23px, 2.4vw, 34px);
+      letter-spacing: .02em;
+    }
+
+    .terminal-title div {
+      color: var(--muted);
+      font: 700 11px var(--mono);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .select,
+    .input,
+    .btn {
+      min-height: 38px;
+      border-radius: 7px;
+      border: 1px solid var(--line);
+      background: rgba(4, 12, 16, .82);
+      color: white;
+      outline: none;
+      padding: 0 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(51, 244, 223, .2), rgba(153, 255, 94, .08));
+      border-color: rgba(51, 244, 223, .38);
+      box-shadow: 0 0 24px rgba(51, 244, 223, .08);
+      transition: .15s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 28px rgba(51, 244, 223, .16);
+    }
+
+    .btn.secondary {
+      background: rgba(11, 28, 36, .78);
+      border-color: var(--line);
+      color: #cfe4ea;
+    }
+
+    .ticker {
+      display: flex;
+      gap: 10px;
+      white-space: nowrap;
+      animation: marquee 34s linear infinite;
+      padding: 8px 0;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .ticker span {
+      border-right: 1px solid rgba(255,255,255,.09);
+      padding: 0 12px;
+      color: #cde2e8;
+    }
+
+    .up { color: var(--emerald) !important; }
+    .down { color: var(--red) !important; }
+    .warn { color: var(--amber) !important; }
+    .cyan { color: var(--cyan) !important; }
+
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    .workspace {
+      padding: 12px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .command-strip {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(7, 18, 24, .72);
+      padding: 9px;
+    }
+
+    .command-strip .input {
+      width: 100%;
+      font-family: var(--mono);
+      border-color: rgba(102, 252, 241, .12);
+      background: rgba(0, 0, 0, .24);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 12px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background:
+        linear-gradient(180deg, rgba(12, 30, 38, .9), rgba(5, 13, 18, .86)),
+        var(--panel);
+      box-shadow: 0 22px 70px rgba(0, 0, 0, .24);
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    .panel-head {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border-bottom: 1px solid rgba(102, 252, 241, .12);
+      padding: 10px 12px;
+      background: rgba(255,255,255,.02);
+    }
+
+    .panel-title {
+      font: 800 12px var(--mono);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: #effcff;
+    }
+
+    .panel-actions {
+      display: flex;
+      gap: 6px;
+      color: var(--muted);
+      font: 700 10px var(--mono);
+    }
+
+    .panel-body { padding: 12px; }
+
+    .company-brief {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    .badge {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.035);
+      color: #d3e5eb;
+      font: 800 10px var(--mono);
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 6px 8px;
+    }
+
+    .badge.cyan { background: rgba(51, 244, 223, .09); color: var(--cyan2); }
+    .badge.green { background: rgba(153, 255, 94, .09); color: var(--emerald); }
+    .badge.amber { background: rgba(255, 194, 71, .1); color: var(--amber); }
+    .badge.red { background: rgba(255, 69, 104, .1); color: #ff8aa0; }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: clamp(26px, 3.2vw, 46px);
+      line-height: 1.02;
+      letter-spacing: .01em;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted2);
+      line-height: 1.55;
+    }
+
+    .score-orb {
+      width: 150px;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 1px solid rgba(51, 244, 223, .34);
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle, rgba(51,244,223,.18), rgba(51,244,223,.03) 62%, transparent 63%),
+        conic-gradient(var(--cyan) 0 313deg, rgba(255,255,255,.08) 313deg 360deg);
+      box-shadow: inset 0 0 36px rgba(0,0,0,.55), 0 0 36px rgba(51, 244, 223, .11);
+      font-family: var(--mono);
+    }
+
+    .score-orb strong {
+      display: block;
+      font-size: 38px;
+      line-height: 1;
+      color: white;
+    }
+
+    .score-orb span {
+      color: var(--muted);
+      font-size: 10px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .kpi {
+      min-height: 86px;
+      border: 1px solid rgba(102, 252, 241, .12);
+      border-radius: 7px;
+      background: rgba(0, 0, 0, .22);
+      padding: 9px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--cyan), transparent);
+      opacity: .7;
+    }
+
+    .label {
+      color: var(--muted);
+      font: 800 10px var(--mono);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .value {
+      color: #fff;
+      font: 800 21px var(--mono);
+      margin-top: 8px;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .module-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .module-grid.three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .module-grid.wide {
+      grid-template-columns: 1.15fr .85fr;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid rgba(102, 252, 241, .1);
+      border-radius: 7px;
+    }
+
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #08171d;
+      color: var(--muted);
+      text-align: left;
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 9px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    td {
+      padding: 10px 9px;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+      color: #cde1e7;
+    }
+
+    tr:hover td { background: rgba(51, 244, 223, .045); }
+
+    .meter {
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      overflow: hidden;
+      margin-top: 7px;
+    }
+
+    .meter span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--cyan);
+      box-shadow: 0 0 14px rgba(51,244,223,.25);
+    }
+
+    .risk-card,
+    .agent-card,
+    .doc-card,
+    .alert-card,
+    .node-card {
+      border: 1px solid rgba(102, 252, 241, .12);
+      border-radius: 7px;
+      background: rgba(0, 0, 0, .22);
+      padding: 10px;
+    }
+
+    .risk-card {
+      border-color: rgba(255, 194, 71, .24);
+      background: linear-gradient(90deg, rgba(255, 194, 71, .1), rgba(0,0,0,.18));
+    }
+
+    .risk-card.red {
+      border-color: rgba(255, 69, 104, .28);
+      background: linear-gradient(90deg, rgba(255, 69, 104, .12), rgba(0,0,0,.18));
+    }
+
+    .risk-card + .risk-card,
+    .agent-card + .agent-card,
+    .doc-card + .doc-card,
+    .alert-card + .alert-card { margin-top: 8px; }
+
+    .card-title {
+      font: 800 12px var(--mono);
+      color: white;
+      margin-bottom: 5px;
+    }
+
+    .card-copy {
+      color: #a9bdc5;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .chart {
+      height: 280px;
+      width: 100%;
+      border: 1px solid rgba(102, 252, 241, .1);
+      border-radius: 7px;
+      background:
+        linear-gradient(rgba(102, 252, 241, .04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(102, 252, 241, .04) 1px, transparent 1px),
+        rgba(0,0,0,.18);
+      background-size: 24px 24px;
+      padding: 8px;
+    }
+
+    canvas { width: 100%; height: 100%; display: block; }
+
+    .heat-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+    }
+
+    .heat-cell {
+      min-height: 48px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,.08);
+      display: grid;
+      place-items: center;
+      color: white;
+      font: 800 10px var(--mono);
+      text-align: center;
+      padding: 4px;
+    }
+
+    .relationship-map {
+      height: 340px;
+      position: relative;
+      border: 1px solid rgba(102, 252, 241, .1);
+      border-radius: 7px;
+      background:
+        radial-gradient(circle at 50% 48%, rgba(51,244,223,.09), transparent 34%),
+        rgba(0,0,0,.22);
+      overflow: hidden;
+    }
+
+    .node {
+      position: absolute;
+      border: 1px solid rgba(51,244,223,.4);
+      border-radius: 999px;
+      padding: 8px 10px;
+      color: white;
+      background: rgba(6, 18, 24, .92);
+      box-shadow: 0 0 20px rgba(51,244,223,.13);
+      font: 800 11px var(--mono);
+    }
+
+    .edge {
+      position: absolute;
+      height: 1px;
+      background: rgba(102, 252, 241, .22);
+      transform-origin: left center;
+    }
+
+    .assistant {
+      border-left: 1px solid var(--line);
+      background: rgba(0, 0, 0, .38);
+      backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+    }
+
+    .assistant-head {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .assistant-head strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .agent-strip {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .agent-chip {
+      border: 1px solid rgba(102, 252, 241, .12);
+      border-radius: 6px;
+      background: rgba(255,255,255,.035);
+      padding: 7px;
+      font: 800 10px var(--mono);
+      color: #bcd2da;
+    }
+
+    .chat {
+      overflow: auto;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .msg {
+      max-width: 94%;
+      border: 1px solid rgba(51, 244, 223, .18);
+      border-radius: 7px;
+      background: rgba(51, 244, 223, .07);
+      padding: 10px;
+      color: #dff7fb;
+      line-height: 1.48;
+      font-size: 13px;
+    }
+
+    .msg.user {
+      align-self: flex-end;
+      background: rgba(153, 255, 94, .08);
+      border-color: rgba(153, 255, 94, .18);
+      color: #f4fff1;
+    }
+
+    .ask {
+      border-top: 1px solid var(--line);
+      padding: 10px;
+    }
+
+    .ask form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 7px;
+    }
+
+    .ask .input {
+      min-width: 0;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .hide { display: none !important; }
+
+    @media (max-width: 1320px) {
+      .terminal { grid-template-columns: 220px minmax(0, 1fr); }
+      .assistant { grid-column: 1 / -1; height: 560px; position: relative; border-left: 0; border-top: 1px solid var(--line); }
+      .rail { height: auto; position: relative; }
+    }
+
+    @media (max-width: 980px) {
+      .terminal { grid-template-columns: 1fr; }
+      .rail { border-right: 0; border-bottom: 1px solid var(--line); }
+      .nav { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+      .macro-top, .command-strip, .hero-grid, .module-grid, .module-grid.wide, .module-grid.three, .company-brief { grid-template-columns: 1fr; }
+      .controls { justify-content: stretch; }
+      .select, .btn { width: 100%; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .score-orb { width: 128px; }
+      .heat-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal">
+    <aside class="rail">
+      <div class="brand">
+        <div class="logo">SA</div>
+        <div>
+          <strong>SAUL AI TERMINAL</strong>
+          <span>PE INTELLIGENCE OS</span>
+        </div>
+      </div>
+      <div class="nav-group-title">Operating Modules</div>
+      <nav class="nav" id="nav"></nav>
+      <div class="nav-group-title">Live System</div>
+      <div class="agent-card">
+        <div class="card-title"><span class="pulse"></span> Intelligence mesh online</div>
+        <div class="card-copy">WebSocket feed, vector retrieval, graph relationships, OCR queues, and risk agents simulated in-browser.</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="macro">
+        <div class="macro-top">
+          <div class="terminal-title">
+            <h1>SAUL AI TERMINAL</h1>
+            <div>The AI Operating System for Private Equity</div>
+          </div>
+          <div class="controls">
+            <select class="select" id="companySelect"></select>
+            <button class="btn" id="scanBtn">RUN AUTHENTICITY SCAN</button>
+            <button class="btn secondary" id="paletteBtn">CTRL+K COMMAND</button>
+          </div>
+        </div>
+        <div class="ticker" id="ticker"></div>
+      </section>
+
+      <section class="workspace">
+        <div class="command-strip">
+          <input id="commandInput" class="input" value="FIND founder-led industrial platforms with >25% growth, export exposure, EBITDA margin >18%, and low governance risk" />
+          <button class="btn" id="runCommand">EXECUTE QUERY</button>
+        </div>
+
+        <div class="hero-grid">
+          <section class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Company Authenticity Dossier</div>
+              <div class="panel-actions"><span>DOCK</span><span>EXPAND</span><span>LIVE</span></div>
+            </div>
+            <div class="panel-body">
+              <div class="company-brief">
+                <div>
+                  <div class="badges">
+                    <span class="badge cyan" id="stageBadge"></span>
+                    <span class="badge green" id="propBadge"></span>
+                    <span class="badge amber" id="intensityBadge"></span>
+                    <span class="badge">ALT-DATA VERIFIED</span>
+                  </div>
+                  <h2 id="companyName"></h2>
+                  <p id="companyDesc"></p>
+                </div>
+                <div class="score-orb"><div><strong id="authScore"></strong><span>AUTH SCORE</span></div></div>
+              </div>
+              <div class="kpi-grid" id="kpis"></div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-head">
+              <div class="panel-title">AI Red Flag Tape</div>
+              <div class="panel-actions"><span>T+0</span><span>STREAM</span></div>
+            </div>
+            <div class="panel-body" id="redFlags"></div>
+          </section>
+        </div>
+
+        <section id="moduleHost"></section>
+      </section>
+    </main>
+
+    <aside class="assistant">
+      <div class="assistant-head">
+        <strong>Right Rail AI Copilot</strong>
+        <div class="sub">Associate + forensic accountant + operating partner + strategy analyst</div>
+        <div class="agent-strip">
+          <div class="agent-chip">SOURCING AGENT</div>
+          <div class="agent-chip">FORENSIC AGENT</div>
+          <div class="agent-chip">IC MEMO AGENT</div>
+          <div class="agent-chip">EXIT AGENT</div>
+        </div>
+      </div>
+      <div class="chat" id="chat"></div>
+      <div class="ask">
+        <form id="askForm">
+          <input class="input" id="question" placeholder="Ask: fraud risk, memo, comps, customers, exit timing..." />
+          <button class="btn" type="submit">ASK</button>
+        </form>
+      </div>
+    </aside>
+  </div>
+
+  <script>
+    const modules = [
+      ["sourcing", "Deal Sourcing", "DS"],
+      ["market", "Market Intelligence", "MI"],
+      ["screening", "Screening Engine", "SE"],
+      ["authenticity", "Authenticity Diligence", "AD"],
+      ["financial", "Financial Intelligence", "FI"],
+      ["dataroom", "Data Room", "DR"],
+      ["documents", "Document Intelligence", "DI"],
+      ["committee", "IC Engine", "IC"],
+      ["portfolio", "Portfolio Monitor", "PM"],
+      ["risk", "Risk Command Center", "RC"],
+      ["exit", "Exit Readiness", "ER"],
+      ["lp", "LP Reporting", "LP"],
+      ["agents", "AI Agents", "AG"],
+      ["settings", "Settings", "ST"]
+    ];
+
+    const companies = [
+      {
+        id: "apex",
+        name: "Apex Precision Manufacturing Pvt Ltd",
+        sector: "Industrial Automation Components",
+        geography: "India",
+        stage: "Management Meeting",
+        proprietary: true,
+        intensity: "Medium auction pressure",
+        desc: "Founder-led precision motion assemblies supplier serving EV, packaging automation, and export-led industrial customers. SAUL AI validates growth through export filings, hiring expansion, customer retention signals, supplier network depth, and capex evidence.",
+        revenue: 148,
+        growth: 28,
+        ebitda: 21.4,
+        auth: 87,
+        scale: 82,
+        moat: 79,
+        exit: 74,
+        earnings: 79,
+        governance: 18,
+        fraud: 21,
+        cash: 76,
+        retention: 86,
+        customer: 88,
+        brand: 82,
+        leadership: 91,
+        employee: 78,
+        workingCapital: 64,
+        debt: 2.1,
+        roce: 24,
+        exportMix: 42,
+        recurring: 31,
+        capex: 9.4,
+        tam: 8.2,
+        redFlags: [
+          ["Working capital anomaly", "Receivables grew 1.4x faster than revenue over two quarters. Validate aging, cut-off, and payment behavior.", "amber"],
+          ["Founder dependency", "Export distributor relationships still concentrate around founder. Build institutional account ownership plan.", "amber"],
+          ["Earnings quality", "EBITDA expansion is directionally supported, but one-time addbacks need third-party corroboration.", "cyan"]
+        ],
+        series: [[2021, 72, 13, 9, 42], [2022, 91, 16, 11, 48], [2023, 116, 22, 15, 57], [2024, 148, 32, 21, 64], [2025, 188, 41, 28, 70]],
+        thesis: "Export-led industrial automation platform with credible organic growth, high retention, and pricing power in precision assemblies."
+      },
+      {
+        id: "nova",
+        name: "Nova Health Diagnostics",
+        sector: "Healthcare Services",
+        geography: "Southeast Asia",
+        stage: "CIM Review",
+        proprietary: false,
+        intensity: "High auction pressure",
+        desc: "Regional diagnostics platform expanding through franchise labs and employer wellness channels. SAUL AI sees strong sector tailwinds but flags franchise revenue recognition, employee churn, and governance transparency.",
+        revenue: 96,
+        growth: 34,
+        ebitda: 18.2,
+        auth: 73,
+        scale: 71,
+        moat: 63,
+        exit: 61,
+        earnings: 62,
+        governance: 45,
+        fraud: 38,
+        cash: 58,
+        retention: 69,
+        customer: 67,
+        brand: 72,
+        leadership: 72,
+        employee: 61,
+        workingCapital: 52,
+        debt: 3.4,
+        roce: 17,
+        exportMix: 0,
+        recurring: 24,
+        capex: 12.8,
+        tam: 14.6,
+        redFlags: [
+          ["Revenue recognition", "Franchise lab revenue needs cut-off testing and contract-level sample validation.", "red"],
+          ["Employee churn", "Glassdoor and hiring data show weakening lab technician retention in top regions.", "amber"],
+          ["Auction risk", "Banker-led process and high sector heat reduce proprietary edge.", "amber"]
+        ],
+        series: [[2021, 41, 6, 4, 35], [2022, 58, 9, 5, 42], [2023, 72, 12, 7, 49], [2024, 96, 17, 8, 52], [2025, 128, 24, 10, 55]],
+        thesis: "Healthcare consolidation target with strong demand tailwinds but below-threshold governance and earnings reliability."
+      },
+      {
+        id: "helio",
+        name: "HelioGrid Storage Systems",
+        sector: "Energy Infrastructure",
+        geography: "North America",
+        stage: "Sourcing Watchlist",
+        proprietary: true,
+        intensity: "Medium-high competition",
+        desc: "Battery storage integrator with utility-scale deployments and dispatch optimization software. SAUL AI validates market momentum, patents, hiring velocity, and buyer appetite, while monitoring supplier concentration.",
+        revenue: 212,
+        growth: 41,
+        ebitda: 14.8,
+        auth: 81,
+        scale: 88,
+        moat: 86,
+        exit: 78,
+        earnings: 76,
+        governance: 28,
+        fraud: 19,
+        cash: 73,
+        retention: 82,
+        customer: 84,
+        brand: 79,
+        leadership: 83,
+        employee: 81,
+        workingCapital: 71,
+        debt: 2.8,
+        roce: 19,
+        exportMix: 18,
+        recurring: 37,
+        capex: 18.1,
+        tam: 26.4,
+        redFlags: [
+          ["Supplier concentration", "Battery module exposure creates margin and delivery risk in downside scenarios.", "amber"],
+          ["Project timing", "Revenue recognition is milestone-based and can create quarterly volatility.", "cyan"],
+          ["Valuation heat", "Strategic buyer appetite is high but valuation discipline required.", "amber"]
+        ],
+        series: [[2021, 74, 8, 6, 44], [2022, 112, 13, 10, 52], [2023, 151, 21, 15, 63], [2024, 212, 31, 22, 71], [2025, 299, 48, 35, 78]],
+        thesis: "Energy infrastructure growth asset with defensible software layer and high strategic buyer relevance."
+      }
+    ];
+
+    const documents = [
+      ["CIM vFinal.pdf", "CIM", "Medium", "Management claims 28% growth and 21.4% EBITDA margin. SAUL AI reconciles against filings, export data, and customer signals."],
+      ["FY25 Management Financials.xlsx", "Financials", "Medium-High", "Receivable days increased from 58 to 74 while EBITDA addbacks expanded 42%."],
+      ["Top Customer MSA.pdf", "Contract", "Medium", "Change-of-control termination right and limited year-three purchase obligation."],
+      ["Vendor Concentration Pack.zip", "Vendor", "Low-Medium", "Supplier network is broadening, but two precision components remain single-source."],
+      ["HR Attrition Export.csv", "HR", "Low", "Attrition is below peer median with positive engineering hiring velocity."]
+    ];
+
+    const portfolio = [
+      ["Apex Precision", 86, 78, 64, "Monitor receivable growth and founder-linked export relationships."],
+      ["Metro Foods", 61, 42, 48, "Margin compression detected; distributor churn rising in western region."],
+      ["Orion Cyber", 79, 72, 82, "Enterprise sales cycle extended, but retention and NRR remain resilient."],
+      ["Lumen Clinics", 58, 37, 41, "Employee attrition and compliance queue expansion require intervention."],
+      ["HelioGrid", 82, 88, 71, "Supplier risk elevated but buyer appetite and market momentum are strong."]
+    ];
+
+    const agents = [
+      ["Deal Sourcing Agent", "Scans hiring, filings, patents, interviews, import/export, PE ownership maps, and founder networks.", "5 opportunities refreshed"],
+      ["Financial Analyst Agent", "Normalizes revenue, EBITDA, ROCE, cash conversion, debt capacity, and return case assumptions.", "3 models updated"],
+      ["Forensic Accounting Agent", "Detects revenue inflation, channel stuffing, smoothing, addback abuse, and working capital manipulation.", "2 alerts open"],
+      ["Industry Intelligence Agent", "Builds market maps, competitive landscapes, pricing power analysis, and TAM/SAM/SOM views.", "11 sectors live"],
+      ["Risk Agent", "Monitors litigation, customer concentration, governance anomalies, macro sensitivity, and operational deterioration.", "7 watch items"],
+      ["Governance Agent", "Analyzes auditor changes, related-party transactions, board quality, compliance, and promoter credibility.", "1 governance flag"],
+      ["IC Memo Agent", "Drafts partner-ready investment memos, downside cases, risk frameworks, and recommendation language.", "memo ready"],
+      ["Portfolio Monitoring Agent", "Streams operating KPIs, alerts, hiring velocity, churn signals, ESG and intervention recommendations.", "5 assets monitored"],
+      ["Exit Strategy Agent", "Predicts buyer universe, valuation readiness, IPO path, strategic fit, and exit timing.", "2 windows favorable"],
+      ["LP Reporting Agent", "Converts portfolio intelligence into LP-ready updates, risk commentary, and value creation narratives.", "QBR draft pending"]
+    ];
+
+    let active = "authenticity";
+    let current = companies[0];
+
+    const $ = (id) => document.getElementById(id);
+    const fmt = (n) => typeof n === "number" ? Math.round(n) : n;
+    const tone = (v) => v >= 80 ? "var(--emerald)" : v >= 65 ? "var(--amber)" : "var(--red)";
+
+    function init() {
+      $("nav").innerHTML = modules.map(([id, name, key], i) => `
+        <button data-module="${id}">
+          <span class="icon">${key}</span><span>${name}</span><span class="key">F${(i % 12) + 1}</span>
+        </button>`).join("");
+      document.querySelectorAll("[data-module]").forEach((btn) => btn.addEventListener("click", () => {
+        active = btn.dataset.module;
+        render();
+      }));
+      $("companySelect").innerHTML = companies.map((c) => `<option value="${c.id}">${c.name}</option>`).join("");
+      $("companySelect").addEventListener("change", (e) => {
+        current = companies.find((c) => c.id === e.target.value);
+        render();
+      });
+      $("scanBtn").addEventListener("click", runScan);
+      $("runCommand").addEventListener("click", () => {
+        active = "sourcing";
+        addMessage("ai", "Command executed. The sourcing agent prioritized founder-led industrial platforms with export validation, EBITDA margin above 18%, and lower governance risk. Apex Precision remains the top-ranked proprietary opportunity.");
+        render();
+      });
+      $("paletteBtn").addEventListener("click", () => addMessage("ai", "Command palette opened in simulation. Try: generate IC memo, explain fraud risk, show exit readiness, build buyer universe, or compare Apex vs HelioGrid."));
+      $("askForm").addEventListener("submit", ask);
+      $("ticker").innerHTML = tickerText() + tickerText();
+      addMessage("ai", "SAUL AI Terminal is online. I can behave as your PE associate, forensic accountant, strategy analyst, operating partner, and IC memo drafter. Ask about fraud risk, market maps, customer quality, comps, or exit readiness.");
+      render();
+    }
+
+    function tickerText() {
+      return `
+        <span class="cyan">MARKET OPEN</span><span>PE DRY POWDER $2.71T</span><span class="up">INDUSTRIAL AUTOMATION +4.8%</span>
+        <span class="warn">BASE RATES 5.25%</span><span>USD/INR 83.41</span><span class="down">IPO ACTIVITY -12%</span>
+        <span class="up">EV SUPPLY CHAIN DEAL FLOW +18%</span><span class="warn">AI ALERT: RECEIVABLES OUTLIER DETECTED</span>
+        <span>BUYER APPETITE: STRATEGICS HIGH</span><span class="cyan">VECTOR INDEX 18,442 DOCS</span>`;
+    }
+
+    function runScan() {
+      $("scanBtn").textContent = "SCANNING 41 SIGNALS...";
+      setTimeout(() => {
+        $("scanBtn").textContent = "RUN AUTHENTICITY SCAN";
+        addMessage("ai", `Scan complete for ${current.name}. External intelligence supports the growth narrative, with the highest diligence priority on ${current.redFlags[0][0].toLowerCase()}.`);
+        render();
+      }, 1200);
+    }
+
+    function render() {
+      document.querySelectorAll("[data-module]").forEach((b) => b.classList.toggle("active", b.dataset.module === active));
+      $("companySelect").value = current.id;
+      $("stageBadge").textContent = current.stage;
+      $("propBadge").textContent = current.proprietary ? "Proprietary signal" : "Banker-led auction";
+      $("intensityBadge").textContent = current.intensity;
+      $("companyName").textContent = current.name;
+      $("companyDesc").textContent = current.desc;
+      $("authScore").textContent = current.auth;
+      $("kpis").innerHTML = [
+        ["Revenue", "$" + current.revenue + "M"],
+        ["Growth", current.growth + "%"],
+        ["EBITDA", current.ebitda + "%"],
+        ["Fraud Prob", current.fraud + "%"],
+        ["Exit Ready", current.exit],
+        ["Debt/EBITDA", current.debt + "x"]
+      ].map(([l, v]) => `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div></div>`).join("");
+      $("redFlags").innerHTML = current.redFlags.map(([title, copy, type]) => `
+        <div class="risk-card ${type === "red" ? "red" : ""}">
+          <div class="card-title">${title}</div>
+          <div class="card-copy">${copy}</div>
+        </div>`).join("");
+      $("moduleHost").innerHTML = moduleHtml();
+      afterRender();
+    }
+
+    function panel(title, body, actions = "FLOAT SNAP RESIZE") {
+      return `<section class="panel"><div class="panel-head"><div class="panel-title">${title}</div><div class="panel-actions">${actions.split(" ").map(a=>`<span>${a}</span>`).join("")}</div></div><div class="panel-body">${body}</div></section>`;
+    }
+
+    function moduleHtml() {
+      const tableRows = companies.map(c => `
+        <tr onclick="current=companies.find(x=>x.id==='${c.id}');render()">
+          <td>${c.name}</td><td>${c.sector}</td><td>${c.geography}</td><td>${c.growth}%</td><td>${c.ebitda}%</td>
+          <td>${c.roce}%</td><td>${c.debt}x</td><td>${c.exportMix}%</td><td style="color:${tone(c.auth)}">${c.auth}</td><td style="color:${tone(100-c.fraud)}">${c.fraud}%</td>
+        </tr>`).join("");
+
+      if (active === "sourcing") {
+        return `<div class="module-grid wide">
+          ${panel("AI Sourcing Engine", `
+            <div class="table-wrap"><table><thead><tr><th>Company</th><th>Sector</th><th>Region</th><th>Growth</th><th>EBITDA</th><th>ROCE</th><th>Debt</th><th>Export</th><th>PE Score</th><th>Fraud</th></tr></thead><tbody>${tableRows}</tbody></table></div>
+          `)}
+          ${panel("Opportunity Matrix", `<div class="chart"><canvas id="matrixCanvas"></canvas></div><div class="risk-card"><div class="card-title">AI Thesis</div><div class="card-copy">${current.thesis}</div></div>`)}
+          ${panel("Sector Heatmap", `<div class="heat-grid">${["EV Suppliers","Diagnostics","Grid Storage","B2B SaaS","Packaging","Specialty Chem","Med Devices","Cyber GRC","Industrial IoT","Food B2B","Logistics","Renewables","Fintech Infra","Precision Parts","Automation","Data Centers"].map((x,i)=>`<div class="heat-cell" style="background:${heat(i)}">${x}</div>`).join("")}</div>`)}
+          ${panel("TAM / SAM / SOM Engine", `${bar("TAM expansion", 88)}${bar("SAM accessibility", 74)}${bar("SOM capture probability", current.scale)}${bar("Pricing power", current.moat)}`)}
+        </div>`;
+      }
+
+      if (active === "market") {
+        return `<div class="module-grid three">
+          ${panel("Market Intelligence Tape", alerts(["Industrial automation multiples widened 0.7x over 90 days.", "Strategic acquirers increasing diligence on India export platforms.", "Packaging automation demand supported by food and pharma capex."]))}
+          ${panel("Competitive Landscape", `<div class="chart"><canvas id="landscapeCanvas"></canvas></div>`)}
+          ${panel("Ownership Map", nodeList(["PE-owned competitors: 11", "Founder-led targets: 38", "Strategic acquirer overlap: 7", "Banker-led auctions: 4"]))}
+          ${panel("Macro Sensitivity", `${bar("Rates sensitivity", 54)}${bar("Currency sensitivity", 46)}${bar("Supply chain exposure", 39)}${bar("Sector momentum", 86)}`)}
+          ${panel("TAM/SAM/SOM", `<div class="value">$${current.tam}B</div><div class="sub">SAUL AI-estimated addressable market after removing low-probability segments and management-inflated TAM assumptions.</div>`)}
+          ${panel("News Sentiment", `${bar("Positive operating news", 78)}${bar("Customer expansion signals", 82)}${bar("Negative litigation mentions", 12)}`)}
+        </div>`;
+      }
+
+      if (active === "screening") {
+        return `<div class="module-grid wide">
+          ${panel("Institutional Screener", `<div class="table-wrap"><table><thead><tr><th>Company</th><th>Sector</th><th>Region</th><th>Growth</th><th>EBITDA</th><th>ROCE</th><th>Debt</th><th>Export</th><th>PE Score</th><th>Fraud</th></tr></thead><tbody>${tableRows}</tbody></table></div>`)}
+          ${panel("Dynamic Filters", `${bar("Revenue growth > 25%", 100)}${bar("EBITDA margin > 18%", 82)}${bar("Customer concentration < 35%", 71)}${bar("Governance trust > 70", 84)}${bar("Recurring revenue evidence", current.recurring)}`)}
+          ${panel("AI Commentary", `<div class="risk-card"><div class="card-title">Screening conclusion</div><div class="card-copy">${current.name} passes growth, margin, customer quality, and sector momentum screens. It requires confirmatory diligence around working capital and management dependency.</div></div>`)}
+          ${panel("Comparable Benchmarking", `<div class="chart"><canvas id="barCanvas"></canvas></div>`)}
+        </div>`;
+      }
+
+      if (active === "authenticity") {
+        return `<div class="module-grid wide">
+          ${panel("Authenticity Intelligence Engine", `<div class="chart"><canvas id="radarCanvas"></canvas></div><div class="kpi-grid">${miniKpis([["Authenticity", current.auth],["Fraud probability", current.fraud+"%"],["Confidence", "91%"],["Governance trust", 100-current.governance],["Earnings reliability", current.earnings],["Operational resilience", current.scale]])}</div>`)}
+          ${panel("Fraud Heatmap", `<div class="heat-grid">${["Revenue inflation","Aggressive accounting","Addback abuse","Fake margins","WC manipulation","Channel stuffing","Smoothing","Cash mismatch","Fake reviews","Overstated TAM","Auditor change","Related party","Litigation","Founder risk","Supplier lock","Customer churn"].map((x,i)=>`<div class="heat-cell" style="background:${fraudHeat(i)}">${x}</div>`).join("")}</div>`)}
+          ${panel("AI Red-Flag Timeline", timeline())}
+          ${panel("Operational Dependency Graph", `<div class="relationship-map">${graphHtml()}</div>`)}
+        </div>`;
+      }
+
+      if (active === "financial") {
+        return `<div class="module-grid wide">
+          ${panel("Financial Intelligence Model", `<div class="chart"><canvas id="lineCanvas"></canvas></div>`)}
+          ${panel("Forensic Accounting Tests", `${bar("Revenue cut-off confidence", 76)}${bar("Cash conversion authenticity", current.cash)}${bar("EBITDA addback quality", 63)}${bar("Receivable aging risk", 42)}${bar("Channel stuffing risk", 28)}`)}
+          ${panel("Return Case Simulator", `${bar("Base case MOIC", 78)}${bar("Upside MOIC", 91)}${bar("Downside protection", 64)}${bar("Debt capacity", 68)}`)}
+          ${panel("Working Capital Cockpit", alerts(["Receivable days increased from 58 to 74.", "Inventory turn remains within peer range.", "Cash conversion trails EBITDA expansion by 320 bps."]))}
+        </div>`;
+      }
+
+      if (active === "dataroom" || active === "documents") {
+        return `<div class="module-grid wide">
+          ${panel("AI-Native Diligence Data Room", documents.map((d,i)=>`<div class="doc-card" onclick="showDoc(${i})"><div class="row"><div class="card-title">${d[0]}</div><span class="badge ${d[2].includes("High") ? "red" : "amber"}">${d[2]}</span></div><div class="card-copy">${d[1]} | OCR ready | semantic indexed | version controlled</div></div>`).join(""))}
+          ${panel("Document Review Output", `<div id="docOutput" class="risk-card"><div class="card-title">Select a document</div><div class="card-copy">SAUL AI will extract clauses, KPIs, anomalies, disclosure gaps, named entities, and memo-ready diligence flags.</div></div>`)}
+          ${panel("Semantic Search", `<input class="input" style="width:100%" value="Show contracts with change-of-control termination rights and weak purchase obligations" /><div class="risk-card"><div class="card-title">Vector search result</div><div class="card-copy">Top Customer MSA matched with 0.91 semantic confidence. Clause creates buyer diligence concern for sponsor exit.</div></div>`)}
+          ${panel("Version Compare", `${bar("CIM claim consistency", 71)}${bar("Financial statement reconciliation", 68)}${bar("Missing disclosure risk", 36)}`)}
+        </div>`;
+      }
+
+      if (active === "committee") {
+        return `<div class="module-grid wide">
+          ${panel("IC Memo Generator", `<button class="btn" onclick="renderMemo()">GENERATE FULL IC MEMO</button><button class="btn secondary" onclick="downloadMemo()">DOWNLOAD MEMO</button><div id="memoOutput" class="risk-card" style="margin-top:10px"><div class="card-title">Memo queue ready</div><div class="card-copy">Generate executive summary, investment thesis, market analysis, management assessment, risk framework, upside/downside cases, return scenarios, and exit pathways.</div></div>`)}
+          ${panel("Recommendation Engine", `<div class="value" style="color:${current.auth > 82 ? "var(--emerald)" : "var(--amber)"}">${current.auth > 82 ? "PROCEED" : "PROCEED WITH CAUTION"}</div><div class="sub">Recommendation calibrated against authenticity score, fraud probability, governance trust, earnings reliability, and exit readiness.</div>`)}
+          ${panel("Downside Case", alerts(["Lower cash conversion reduces debt paydown and exit optionality.", "Founder-linked customer relationships could compress strategic buyer appetite.", "If addbacks are disallowed, entry multiple discipline becomes critical."]))}
+          ${panel("Exit Pathways", `${bar("Strategic buyer sale", 84)}${bar("Sponsor-to-sponsor", 73)}${bar("IPO readiness", 42)}${bar("Dividend recap", 58)}`)}
+        </div>`;
+      }
+
+      if (active === "portfolio") {
+        return `<div class="module-grid wide">
+          ${panel("Live Portfolio Monitor", `<div class="chart"><canvas id="portfolioCanvas"></canvas></div>`)}
+          ${panel("AI Alerts", portfolio.map(p=>`<div class="alert-card"><div class="card-title">${p[0]} <span style="float:right;color:${tone(p[1])}">${p[1]}</span></div><div class="card-copy">${p[4]}</div></div>`).join(""))}
+          ${panel("Intervention Recommendations", alerts(["Launch 13-week cash conversion sprint for Apex.", "Deploy pricing review for Metro Foods margin compression.", "Refresh compliance staffing model for Lumen Clinics."]))}
+          ${panel("Operating Partner Cockpit", `${bar("Revenue trend", 82)}${bar("EBITDA trend", 74)}${bar("Working capital health", current.workingCapital)}${bar("Hiring velocity", current.employee)}${bar("Customer churn defense", current.retention)}`)}
+        </div>`;
+      }
+
+      if (active === "risk") {
+        return `<div class="module-grid three">
+          ${panel("Risk Command Center", alerts(["Customer concentration rising in two portfolio assets.", "Cash conversion deterioration detected at Apex.", "Founder sentiment weakening in management call transcripts.", "Supply chain fragility elevated for HelioGrid."]))}
+          ${panel("Fraud Surveillance", `${bar("Revenue inflation risk", current.fraud)}${bar("Working capital manipulation", 58)}${bar("Addback abuse", 46)}${bar("Cash mismatch", 31)}`)}
+          ${panel("Governance Surveillance", `${bar("Auditor change risk", 12)}${bar("Related-party risk", 24)}${bar("Litigation exposure", 18)}${bar("Promoter credibility", 100-current.governance)}`)}
+          ${panel("Scenario Simulation", `${bar("Base case confidence", 84)}${bar("Rate shock durability", 67)}${bar("Demand shock durability", 72)}${bar("Exit multiple compression", 55)}`)}
+          ${panel("Risk Timeline", timeline())}
+          ${panel("Control Tower", nodeList(["24 live alerts", "6 open diligence issues", "3 IC risks unresolved", "2 operating interventions active"]))}
+        </div>`;
+      }
+
+      if (active === "exit") {
+        return `<div class="module-grid wide">
+          ${panel("Exit Readiness Engine", `<div class="kpi-grid">${miniKpis([["Exit readiness", current.exit],["Buyer interest", current.exit+7],["Valuation momentum", current.moat],["IPO readiness", "42"],["Data room quality", "78"],["Operational maturity", current.scale]])}</div>`)}
+          ${panel("Buyer Universe Map", `<div class="relationship-map">${buyerGraph()}</div>`)}
+          ${panel("Timing Recommendation", `<div class="value">${current.exit > 75 ? "12-18 MONTH WINDOW" : "18-30 MONTH BUILD"}</div><div class="sub">SAUL AI recommends improving cash conversion evidence and management institutionalization before launching a full process.</div>`)}
+          ${panel("Multiple Expansion Levers", alerts(["Clean earnings bridge and third-party QofE support.", "Reduce founder dependency in top accounts.", "Create buyer-specific growth proof packets.", "Package export expansion and recurring aftermarket data."]))}
+        </div>`;
+      }
+
+      if (active === "lp") {
+        return `<div class="module-grid">
+          ${panel("LP Reporting Draft", `<div class="risk-card"><div class="card-title">Quarterly LP narrative</div><div class="card-copy">Portfolio operating performance remains resilient, with AI surveillance identifying working capital pressure in select industrial assets and intervention plans underway. Exit readiness improved in infrastructure and industrial automation holdings.</div></div>`)}
+          ${panel("Value Creation Evidence", `${bar("Revenue acceleration", 78)}${bar("Margin expansion", 71)}${bar("Governance improvement", 84)}${bar("Exit preparation", 69)}`)}
+        </div>`;
+      }
+
+      if (active === "agents") {
+        return `<div class="module-grid three">${agents.map(a => panel(a[0], `<div class="card-copy">${a[1]}</div><div class="meter"><span style="width:${55 + Math.random()*35}%"></span></div><div class="sub">${a[2]}</div>`, "AUTO LIVE")).join("")}</div>`;
+      }
+
+      return `<div class="module-grid">
+        ${panel("Architecture Simulation", nodeList(["FastAPI orchestration", "PostgreSQL company store", "Vector database for semantic retrieval", "Graph database for relationship intelligence", "Redis cache and WebSocket alerts", "Celery queues for OCR and agent tasks"]))}
+        ${panel("Keyboard Shortcuts", nodeList(["CTRL+K command palette", "F1-F12 module switching", "ALT+S run sourcing query", "ALT+I generate IC memo", "ALT+R risk command center"]))}
+      </div>`;
+    }
+
+    function miniKpis(items) {
+      return items.map(([l,v]) => `<div class="kpi"><div class="label">${l}</div><div class="value">${v}</div></div>`).join("");
+    }
+
+    function bar(label, value) {
+      const n = parseFloat(value);
+      return `<div style="margin-bottom:11px"><div class="row"><span class="label">${label}</span><span class="mono" style="color:${tone(n)}">${fmt(value)}</span></div><div class="meter"><span style="width:${Math.max(5, Math.min(100, n))}%;background:${tone(n)}"></span></div></div>`;
+    }
+
+    function alerts(items) {
+      return items.map((x, i) => `<div class="risk-card ${i === 1 ? "red" : ""}"><div class="card-title">${i === 0 ? "AI Alert" : "Surveillance Finding"}</div><div class="card-copy">${x}</div></div>`).join("");
+    }
+
+    function nodeList(items) {
+      return items.map(x => `<div class="node-card"><div class="card-copy">${x}</div></div>`).join("");
+    }
+
+    function timeline() {
+      return alerts([
+        "T-30: Export filings validate management's international expansion narrative.",
+        "T-21: Receivable days move outside peer band, triggering forensic working capital review.",
+        "T-14: Customer sentiment remains strong; churn probability lower than sector median.",
+        "T-07: IC memo agent classifies the opportunity as proceed with focused red-flag diligence."
+      ]);
+    }
+
+    function heat(i) {
+      const colors = ["rgba(51,244,223,.62)", "rgba(153,255,94,.48)", "rgba(255,194,71,.48)", "rgba(255,69,104,.36)"];
+      return colors[i % colors.length];
+    }
+
+    function fraudHeat(i) {
+      const vals = [24, 38, 52, 21, 58, 34, 29, 31, 18, 44, 12, 26, 16, 46, 39, 22];
+      const v = vals[i];
+      if (v > 50) return "rgba(255,69,104,.58)";
+      if (v > 35) return "rgba(255,194,71,.5)";
+      return "rgba(51,244,223,.34)";
+    }
+
+    function graphHtml() {
+      return `
+        <div class="edge" style="left:29%;top:50%;width:28%;transform:rotate(-19deg)"></div>
+        <div class="edge" style="left:29%;top:50%;width:34%;transform:rotate(18deg)"></div>
+        <div class="edge" style="left:29%;top:50%;width:24%;transform:rotate(58deg)"></div>
+        <div class="edge" style="left:29%;top:50%;width:25%;transform:rotate(-62deg)"></div>
+        <div class="node" style="left:35%;top:43%">Apex</div>
+        <div class="node" style="left:7%;top:12%">Founder</div>
+        <div class="node" style="left:66%;top:17%">Export distributor</div>
+        <div class="node" style="left:68%;top:68%">Tier-1 OEM</div>
+        <div class="node" style="left:11%;top:72%">Supplier cluster</div>
+        <div class="node" style="left:44%;top:8%">PE sponsor universe</div>`;
+    }
+
+    function buyerGraph() {
+      return `
+        <div class="edge" style="left:31%;top:51%;width:36%;transform:rotate(-27deg)"></div>
+        <div class="edge" style="left:31%;top:51%;width:37%;transform:rotate(15deg)"></div>
+        <div class="edge" style="left:31%;top:51%;width:28%;transform:rotate(54deg)"></div>
+        <div class="node" style="left:31%;top:43%">${current.name.split(" ")[0]}</div>
+        <div class="node" style="left:65%;top:14%">Strategic acquirer</div>
+        <div class="node" style="left:69%;top:52%">Sponsor platform</div>
+        <div class="node" style="left:48%;top:76%">Industrial conglomerate</div>
+        <div class="node" style="left:8%;top:18%">IPO path</div>`;
+    }
+
+    function afterRender() {
+      if ($("radarCanvas")) drawRadar("radarCanvas");
+      if ($("lineCanvas")) drawLine("lineCanvas");
+      if ($("matrixCanvas")) drawMatrix("matrixCanvas");
+      if ($("landscapeCanvas")) drawMatrix("landscapeCanvas");
+      if ($("barCanvas")) drawBars("barCanvas");
+      if ($("portfolioCanvas")) drawPortfolio("portfolioCanvas");
+    }
+
+    function setupCanvas(id) {
+      const c = $(id), ctx = c.getContext("2d"), dpr = window.devicePixelRatio || 1;
+      c.width = c.offsetWidth * dpr;
+      c.height = c.offsetHeight * dpr;
+      ctx.scale(dpr, dpr);
+      return [c, ctx, c.offsetWidth, c.offsetHeight];
+    }
+
+    function drawRadar(id) {
+      const [c, ctx, w, h] = setupCanvas(id);
+      const data = [["Financial", current.earnings], ["Customer", current.customer], ["Governance", 100-current.governance], ["Moat", current.moat], ["Scale", current.scale], ["Exit", current.exit]];
+      const cx=w/2, cy=h/2, r=Math.min(w,h)*.34, n=data.length;
+      ctx.clearRect(0,0,w,h); ctx.strokeStyle="rgba(102,252,241,.18)"; ctx.fillStyle="#b8cbd2"; ctx.font="11px monospace";
+      for(let ring=1; ring<=4; ring++){ ctx.beginPath(); data.forEach((_,i)=>{ const a=-Math.PI/2+i*2*Math.PI/n, rr=r*ring/4, x=cx+Math.cos(a)*rr, y=cy+Math.sin(a)*rr; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.closePath(); ctx.stroke(); }
+      ctx.beginPath(); data.forEach((d,i)=>{ const a=-Math.PI/2+i*2*Math.PI/n, rr=r*d[1]/100, x=cx+Math.cos(a)*rr, y=cy+Math.sin(a)*rr; i?ctx.lineTo(x,y):ctx.moveTo(x,y); }); ctx.closePath(); ctx.fillStyle="rgba(51,244,223,.28)"; ctx.fill(); ctx.strokeStyle="#33f4df"; ctx.lineWidth=2; ctx.stroke();
+      data.forEach((d,i)=>{ const a=-Math.PI/2+i*2*Math.PI/n, x=cx+Math.cos(a)*(r+28), y=cy+Math.sin(a)*(r+28); ctx.textAlign="center"; ctx.fillText(d[0],x,y); });
+    }
+
+    function drawLine(id) {
+      const [c, ctx, w, h] = setupCanvas(id);
+      const pad=30, max=Math.max(...current.series.flatMap(s=>s.slice(1))) * 1.15;
+      [[1,"#33f4df"],[2,"#99ff5e"],[3,"#ffc247"],[4,"#9d7cff"]].forEach(([idx,col])=>{
+        ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=2;
+        current.series.forEach((s,i)=>{ const x=pad+i*(w-pad*2)/(current.series.length-1), y=h-pad-(s[idx]/max)*(h-pad*2); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+        ctx.stroke();
+      });
+      ctx.fillStyle="#78919c"; ctx.font="10px monospace"; current.series.forEach((s,i)=>ctx.fillText(s[0], pad+i*(w-pad*2)/(current.series.length-1)-10, h-8));
+    }
+
+    function drawMatrix(id) {
+      const [c, ctx, w, h] = setupCanvas(id);
+      ctx.clearRect(0,0,w,h); ctx.strokeStyle="rgba(102,252,241,.16)";
+      ctx.beginPath(); ctx.moveTo(36,h-32); ctx.lineTo(w-20,h-32); ctx.moveTo(36,18); ctx.lineTo(36,h-32); ctx.stroke();
+      companies.forEach((co,i)=>{ const x=50+(co.scale/100)*(w-90), y=h-45-(co.auth/100)*(h-75); ctx.beginPath(); ctx.fillStyle=i===0?"#33f4df":i===1?"#ffc247":"#99ff5e"; ctx.arc(x,y,8+co.growth/8,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#e9f8fb"; ctx.font="10px monospace"; ctx.fillText(co.name.split(" ")[0],x+12,y+3); });
+      ctx.fillStyle="#78919c"; ctx.font="10px monospace"; ctx.fillText("Scalability",w-85,h-9); ctx.save(); ctx.translate(10,80); ctx.rotate(-Math.PI/2); ctx.fillText("Authenticity",0,0); ctx.restore();
+    }
+
+    function drawBars(id) {
+      const [c, ctx, w, h] = setupCanvas(id);
+      const vals = [["Growth", current.growth],["EBITDA", current.ebitda],["ROCE", current.roce],["Moat", current.moat],["Exit", current.exit]];
+      const pad=28, bw=(w-pad*2)/vals.length*.55;
+      vals.forEach((v,i)=>{ const x=pad+i*(w-pad*2)/vals.length+10, bh=v[1]/100*(h-pad*2), y=h-pad-bh; ctx.fillStyle=tone(v[1]); ctx.fillRect(x,y,bw,bh); ctx.fillStyle="#b8cbd2"; ctx.font="10px monospace"; ctx.fillText(v[0],x,h-8); });
+    }
+
+    function drawPortfolio(id) {
+      const [c, ctx, w, h] = setupCanvas(id);
+      const pad=30, bw=(w-pad*2)/portfolio.length*.58;
+      portfolio.forEach((p,i)=>{ const x=pad+i*(w-pad*2)/portfolio.length+8, bh=p[1]/100*(h-pad*2), y=h-pad-bh; ctx.fillStyle=tone(p[1]); ctx.fillRect(x,y,bw,bh); ctx.fillStyle="#b8cbd2"; ctx.font="10px monospace"; ctx.fillText(p[0].split(" ")[0],x,h-8); });
+    }
+
+    function showDoc(i) {
+      const d = documents[i];
+      $("docOutput").innerHTML = `<div class="card-title">${d[0]} | ${d[2]} Risk</div><div class="card-copy">${d[3]}</div><div class="risk-card"><div class="card-title">Extracted diligence flags</div><div class="card-copy">Clause extraction complete. KPI extraction complete. Named entities mapped to relationship graph. IC memo risk language ready.</div></div>`;
+    }
+
+    function memoText() {
+      return `SAUL AI TERMINAL - INVESTMENT COMMITTEE MEMO
+
+Target: ${current.name}
+Sector: ${current.sector}
+Recommendation: ${current.auth > 82 ? "PROCEED" : "PROCEED WITH CAUTION"}
+
+Executive Summary:
+${current.name} is a ${current.geography}-based ${current.sector} business generating $${current.revenue}M of revenue, ${current.growth}% growth, and ${current.ebitda}% EBITDA margin. SAUL AI assigns an authenticity score of ${current.auth}/100 and a fraud probability of ${current.fraud}%.
+
+Investment Thesis:
+${current.thesis}
+
+Authenticity Intelligence:
+Growth is supported by external intelligence signals including hiring velocity, customer quality, operating footprint, market momentum, and alternative data. Key issue requiring diligence: ${current.redFlags[0][0]}.
+
+Key Risks:
+- ${current.redFlags[0][1]}
+- Governance trust index requires confirmation through legal, compliance, and management referencing.
+- Earnings reliability should be validated through revenue cut-off, receivable aging, and addback testing.
+
+Value Creation Plan:
+- Install cash conversion cockpit and receivable aging surveillance.
+- Institutionalize customer ownership beyond founder-led relationships.
+- Build buyer-specific proof packets for exit readiness.
+
+Exit Pathway:
+Most likely exit is strategic sale or sponsor-to-sponsor transaction. Exit readiness score is ${current.exit}/100.`;
+    }
+
+    function renderMemo() {
+      $("memoOutput").className = "";
+      $("memoOutput").style.whiteSpace = "pre-line";
+      $("memoOutput").style.lineHeight = "1.55";
+      $("memoOutput").textContent = memoText();
+    }
+
+    function downloadMemo() {
+      const blob = new Blob([memoText()], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = current.name.replaceAll(" ", "-") + "-SAUL-IC-Memo.txt";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function addMessage(role, text) {
+      const div = document.createElement("div");
+      div.className = "msg " + (role === "user" ? "user" : "");
+      div.textContent = text;
+      $("chat").appendChild(div);
+      $("chat").scrollTop = $("chat").scrollHeight;
+    }
+
+    function ask(e) {
+      e.preventDefault();
+      const q = $("question").value.trim();
+      if (!q) return;
+      $("question").value = "";
+      addMessage("user", q);
+      const l = q.toLowerCase();
+      let a = `${current.name} has an authenticity score of ${current.auth}/100. The terminal validates the business through external operating signals, forensic financial checks, customer quality, governance surveillance, and exit readiness scoring.`;
+      if (l.includes("fraud") || l.includes("risk") || l.includes("manipulat")) a = `Fraud probability is ${current.fraud}%. The main issue is ${current.redFlags[0][0].toLowerCase()}: ${current.redFlags[0][1]} I would test revenue cut-off, receivable aging, cash conversion, addback support, and customer payment behavior before IC approval.`;
+      if (l.includes("memo") || l.includes("ic")) a = `IC recommendation: ${current.auth > 82 ? "Proceed" : "Proceed with caution"}. Thesis: ${current.thesis} The memo should foreground authenticity validation, then isolate working capital, governance, customer dependency, and exit readiness as decision gates.`;
+      if (l.includes("customer")) a = `Customer traction appears ${current.customer >= 80 ? "authentic and sticky" : "mixed"}. Retention score is ${current.retention}/100, customer reality score is ${current.customer}/100, and brand trust is ${current.brand}/100. The next diligence step is customer cohort calls and top-account dependency mapping.`;
+      if (l.includes("exit") || l.includes("buyer")) a = `Exit readiness is ${current.exit}/100. Strategic buyers are the most likely path, followed by sponsor platforms. Multiple expansion depends on cleaner earnings support, institutionalized customer relationships, and stronger data room quality.`;
+      if (l.includes("comps") || l.includes("compare")) a = `Comparable view: Apex has stronger authenticity and cash quality than Nova, while HelioGrid has higher market momentum and moat strength. Apex is the cleaner PE control opportunity; HelioGrid is the higher-growth strategic exit candidate.`;
+      setTimeout(() => addMessage("ai", a), 260);
+    }
+
+    init();
+  </script>
+</body>
+</html>
